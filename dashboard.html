@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>币安合约判断面板</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI','Microsoft YaHei',sans-serif;background:#0d1117;color:#e6edf3;min-height:100vh;padding:16px}
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.header h1{font-size:18px;font-weight:700;color:#f0f6fc}
+.search-wrap{position:relative;margin-bottom:14px}
+.search-input{width:100%;padding:10px 14px 10px 36px;background:#161b22;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:14px;outline:none}
+.search-input:focus{border-color:#58a6ff}
+.search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#8b949e;font-size:16px}
+.dropdown{position:absolute;top:100%;left:0;right:0;background:#161b22;border:1px solid #30363d;border-radius:8px;max-height:220px;overflow-y:auto;z-index:100;display:none}
+.dropdown.show{display:block}
+.dropdown-item{padding:8px 14px;cursor:pointer;font-size:13px;display:flex;justify-content:space-between;align-items:center}
+.dropdown-item:hover{background:#21262d}
+.dropdown-item .sym{font-weight:600;color:#58a6ff}
+.dropdown-item .base{color:#8b949e;font-size:11px}
+.cur-symbol{display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:8px 14px;background:#161b22;border-radius:8px;border:1px solid #30363d}
+.cur-symbol .name{font-size:16px;font-weight:700;color:#f0f6fc}
+.cur-symbol .hint{font-size:11px;color:#8b949e;margin-left:auto}
+.srv-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:4px}
+.ok{background:#3fb950}.err{background:#f85149}
+.refresh-btn{padding:7px 16px;background:#1f6feb;border:none;border-radius:6px;color:#fff;cursor:pointer;font-size:13px}
+.refresh-btn:hover{background:#388bfd}
+.refresh-btn:disabled{opacity:.5;cursor:default}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.card{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:14px}
+.card.full{grid-column:1/-1}
+.card-title{font-size:11px;color:#8b949e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
+.verdict{text-align:center;padding:18px 0}
+.verdict .action{font-size:28px;font-weight:800;margin-bottom:6px}
+.verdict .summary{font-size:13px;color:#8b949e;line-height:1.5}
+.action-long{color:#3fb950}.action-short{color:#f85149}.action-wait{color:#d29922}
+.badge{display:inline-block;padding:2px 10px;border-radius:12px;font-size:11px;font-weight:600;margin-left:8px}
+.badge-s{background:#0d4429;color:#3fb950}.badge-m{background:#3d2300;color:#d29922}.badge-w,.badge-n{background:#1c1c2e;color:#8b949e}
+.stat-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid #21262d;font-size:13px}
+.stat-row:last-child{border-bottom:none}
+.stat-label{color:#8b949e}
+.stat-value{font-weight:600}
+.up{color:#3fb950}.down{color:#f85149}.neutral{color:#8b949e}
+.price-box{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.price-item{background:#0d1117;border-radius:6px;padding:8px 10px}
+.price-item .p-label{font-size:10px;color:#8b949e;margin-bottom:3px}
+.price-item .p-value{font-size:14px;font-weight:700}
+.reasons-list{list-style:none}
+.reasons-list li{padding:5px 0;font-size:12px;color:#c9d1d9;border-bottom:1px solid #21262d;display:flex;gap:6px}
+.reasons-list li:last-child{border-bottom:none}
+.reasons-list li::before{content:"›";color:#58a6ff;font-weight:bold}
+canvas{width:100%;height:80px;display:block}
+.loading{display:flex;align-items:center;justify-content:center;height:120px;color:#8b949e;font-size:13px;flex-direction:column;gap:10px}
+.spinner{width:24px;height:24px;border:2px solid #30363d;border-top-color:#58a6ff;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.error-box{background:#1c0a0a;border:1px solid #6e2020;border-radius:8px;padding:12px;font-size:12px;color:#f85149}
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>📊 币安合约判断面板</h1>
+  <div style="display:flex;align-items:center;gap:10px">
+    <span style="font-size:12px;color:#8b949e"><span class="srv-dot" id="sd"></span><span id="st">检测中...</span></span>
+    <button class="refresh-btn" id="rbtn" onclick="loadData()">刷新</button>
+  </div>
+</div>
+
+<div class="search-wrap">
+  <span class="search-icon">🔍</span>
+  <input class="search-input" id="search" placeholder="搜索币种，例如 BTC、ETH、SOL..." autocomplete="off" oninput="onSearch()" onfocus="onFocus()" onblur="onBlur()">
+  <div class="dropdown" id="dropdown"></div>
+</div>
+
+<div class="cur-symbol" id="cur-symbol">
+  <span class="name" id="cur-name">BTCUSDT</span>
+  <span class="hint">点击上方搜索框切换币种</span>
+</div>
+
+<div id="content">
+  <div class="loading"><div class="spinner"></div>正在连接服务器...</div>
+</div>
+
+<script>
+const API='http://127.0.0.1:8765';
+let sym='BTCUSDT';
+let allSymbols=[];
+let autoT=null;
+
+async function checkServer(){
+  try{
+    const r=await fetch(API+'/health',{signal:AbortSignal.timeout(2000)});
+    if(r.ok){document.getElementById('sd').className='srv-dot ok';document.getElementById('st').textContent='服务器在线';return true}
+  }catch(e){}
+  document.getElementById('sd').className='srv-dot err';
+  document.getElementById('st').textContent='服务器离线';
+  return false;
+}
+
+async function loadSymbols(){
+  try{
+    const r=await fetch(API+'/api/symbols');
+    allSymbols=await r.json();
+  }catch(e){allSymbols=[];}
+}
+
+function onSearch(){
+  const q=document.getElementById('search').value.trim().toUpperCase();
+  const dd=document.getElementById('dropdown');
+  if(!q){dd.classList.remove('show');return}
+  const matches=allSymbols.filter(s=>s.symbol.includes(q)||s.baseAsset.toUpperCase().includes(q)).slice(0,20);
+  if(!matches.length){dd.classList.remove('show');return}
+  dd.innerHTML=matches.map(s=>`<div class="dropdown-item" onmousedown="selectSym('${s.symbol}')"><span class="sym">${s.symbol}</span><span class="base">${s.baseAsset}/USDT</span></div>`).join('');
+  dd.classList.add('show');
+}
+
+function onFocus(){if(document.getElementById('search').value.trim())onSearch()}
+function onBlur(){setTimeout(()=>document.getElementById('dropdown').classList.remove('show'),200)}
+
+function selectSym(s){
+  sym=s;
+  document.getElementById('cur-name').textContent=s;
+  document.getElementById('search').value='';
+  document.getElementById('dropdown').classList.remove('show');
+  loadData();
+}
+
+async function loadData(){
+  const btn=document.getElementById('rbtn');
+  btn.disabled=true;btn.textContent='加载中...';
+  const ok=await checkServer();
+  if(!ok){
+    document.getElementById('content').innerHTML='<div class="card full error-box">⚠️ 无法连接本地服务器 (127.0.0.1:8765)<br><br>请先运行 <strong>start.bat</strong>，再刷新页面。</div>';
+    btn.disabled=false;btn.textContent='刷新';return;
+  }
+  if(!allSymbols.length)await loadSymbols();
+  try{
+    const r=await fetch(`${API}/api/analyze?symbol=${sym}`);
+    const d=await r.json();
+    if(d.error)throw new Error(d.error);
+    render(d);
+  }catch(e){
+    document.getElementById('content').innerHTML=`<div class="card full error-box">⚠️ 数据获取失败: ${e.message}</div>`;
+  }
+  btn.disabled=false;btn.textContent='刷新';
+  clearTimeout(autoT);autoT=setTimeout(loadData,30000);
+}
+
+function ac(a){if(a.includes('做多')||a.startsWith('偏多'))return'action-long';if(a.includes('做空')||a.startsWith('偏空'))return'action-short';return'action-wait'}
+function bc(c){if(c==='强')return'badge-s';if(c==='中')return'badge-m';return'badge-w'}
+function cv(v,t=0){return v>t?'up':v<t?'down':'neutral'}
+function fmt(n,d=4){return Number(n).toFixed(d)}
+function fpct(n){return(Number(n)>=0?'+':'')+Number(n).toFixed(3)+'%'}
+
+function drawChart(id,closes){
+  const c=document.getElementById(id);if(!c)return;
+  const ctx=c.getContext('2d');
+  const W=c.offsetWidth||300,H=80;
+  c.width=W;c.height=H;
+  const mn=Math.min(...closes),mx=Math.max(...closes),rng=mx-mn||1;
+  const pts=closes.map((v,i)=>({x:i/(closes.length-1)*W,y:H-((v-mn)/rng)*(H-8)-4}));
+  const up=closes[closes.length-1]>=closes[0];
+  const g=ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,up?'rgba(63,185,80,.3)':'rgba(248,81,73,.3)');
+  g.addColorStop(1,up?'rgba(63,185,80,0)':'rgba(248,81,73,0)');
+  ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);
+  pts.slice(1).forEach(p=>ctx.lineTo(p.x,p.y));
+  ctx.lineTo(W,H);ctx.lineTo(0,H);ctx.closePath();
+  ctx.fillStyle=g;ctx.fill();
+  ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);
+  pts.slice(1).forEach(p=>ctx.lineTo(p.x,p.y));
+  ctx.strokeStyle=up?'#3fb950':'#f85149';ctx.lineWidth=1.5;ctx.stroke();
+}
+
+function render(d){
+  const t=d.trend,s=d.structure;
+  const rs=(d.reasons||[]).map(r=>`<li>${r}</li>`).join('')||'<li>暂无特别提示</li>';
+  document.getElementById('content').innerHTML=`
+  <div class="grid">
+    <div class="card full">
+      <div class="card-title">${d.symbol} · 15分钟 · 综合判断</div>
+      <div class="verdict">
+        <div class="action ${ac(d.action)}">${d.action}<span class="badge ${bc(d.confidence)}">${d.confidence}</span></div>
+        <div class="summary">${d.summary}</div>
+      </div>
+    </div>
+    <div class="card full"><div class="card-title">近50根K线走势</div><canvas id="mc"></canvas></div>
+    <div class="card">
+      <div class="card-title">趋势结构</div>
+      <div class="stat-row"><span class="stat-label">当前价</span><span class="stat-value">${fmt(t.close,2)}</span></div>
+      <div class="stat-row"><span class="stat-label">趋势方向</span><span class="stat-value ${t.trend==='偏多'?'up':t.trend==='偏空'?'down':'neutral'}">${t.trend}</span></div>
+      <div class="stat-row"><span class="stat-label">市场状态</span><span class="stat-value">${t.state}</span></div>
+      <div class="stat-row"><span class="stat-label">RSI(14)</span><span class="stat-value ${t.rsi>55?'up':t.rsi<45?'down':'neutral'}">${fmt(t.rsi,1)}</span></div>
+      <div class="stat-row"><span class="stat-label">ATR(14)</span><span class="stat-value">${fmt(t.atr,2)}</span></div>
+      <div class="stat-row"><span class="stat-label">支撑</span><span class="stat-value up">${fmt(t.support,2)}</span></div>
+      <div class="stat-row"><span class="stat-label">压力</span><span class="stat-value down">${fmt(t.resistance,2)}</span></div>
+    </div>
+    <div class="card">
+      <div class="card-title">持仓结构</div>
+      <div class="stat-row"><span class="stat-label">OI变化</span><span class="stat-value ${cv(s.oi_change_pct)}">${fpct(s.oi_change_pct)}</span></div>
+      <div class="stat-row"><span class="stat-label">主动买卖比</span><span class="stat-value ${cv(s.taker_ratio,1)}">${fmt(s.taker_ratio,3)}</span></div>
+      <div class="stat-row"><span class="stat-label">大户持仓比</span><span class="stat-value ${cv(s.top_pos_ratio,1)}">${fmt(s.top_pos_ratio,3)}</span></div>
+      <div class="stat-row"><span class="stat-label">大户账户比</span><span class="stat-value ${cv(s.top_acc_ratio,1)}">${fmt(s.top_acc_ratio,3)}</span></div>
+      <div class="stat-row"><span class="stat-label">全市场多空比</span><span class="stat-value ${cv(s.global_ratio,1)}">${fmt(s.global_ratio,3)}</span></div>
+      <div class="stat-row"><span class="stat-label">资金费率</span><span class="stat-value ${cv(s.last_funding_rate)}">${(s.last_funding_rate*100).toFixed(4)}%</span></div>
+      <div class="stat-row"><span class="stat-label">费率状态</span><span class="stat-value">${s.funding_state}</span></div>
+    </div>
+    <div class="card full">
+      <div class="card-title">执行参考</div>
+      <div class="price-box">
+        <div class="price-item"><div class="p-label">进场价</div><div class="p-value">${fmt(d.entry,2)}</div></div>
+        <div class="price-item"><div class="p-label">止损</div><div class="p-value down">${fmt(d.stop_loss,2)}</div></div>
+        <div class="price-item"><div class="p-label">止盈1</div><div class="p-value up">${fmt(d.take_profit_1,2)}</div></div>
+        <div class="price-item"><div class="p-label">止盈2 · 盈亏比 1:${fmt(d.rr,2)}</div><div class="p-value up">${fmt(d.take_profit_2,2)}</div></div>
+      </div>
+    </div>
+    <div class="card full"><div class="card-title">判断依据</div><ul class="reasons-list">${rs}</ul></div>
+  </div>
+  <div style="text-align:center;margin-top:12px;font-size:11px;color:#484f58">
+    更新于 ${new Date(d.updated_at*1000).toLocaleTimeString('zh-CN')} · 30秒自动刷新 · 仅供参考，非投资建议
+  </div>`;
+  requestAnimationFrame(()=>drawChart('mc',d.chart.closes));
+}
+
+window.onload=loadData;
+</script>
+</body>
+</html>
