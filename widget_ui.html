@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>币安合约面板</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Microsoft YaHei','Segoe UI',sans-serif;background:#0d1117;color:#e6edf3;padding:12px;user-select:none}
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;-webkit-app-region:drag;cursor:move}
+.header h1{font-size:15px;font-weight:700;color:#f0f6fc}
+.search-wrap{position:relative;margin-bottom:10px}
+.search-input{width:100%;padding:8px 12px 8px 32px;background:#161b22;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:13px;outline:none}
+.search-input:focus{border-color:#58a6ff}
+.si{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:#8b949e;font-size:14px}
+.dropdown{position:absolute;top:100%;left:0;right:0;background:#161b22;border:1px solid #30363d;border-radius:8px;max-height:200px;overflow-y:auto;z-index:999;display:none}
+.dropdown.show{display:block}
+.di{padding:7px 12px;cursor:pointer;font-size:12px;display:flex;justify-content:space-between}
+.di:hover{background:#21262d}
+.di .sym{font-weight:600;color:#58a6ff}
+.di .base{color:#8b949e;font-size:11px}
+.cur{display:flex;align-items:center;margin-bottom:10px;padding:6px 12px;background:#161b22;border-radius:8px;border:1px solid #30363d}
+.cur .name{font-size:14px;font-weight:700}
+.cur .hint{font-size:10px;color:#8b949e;margin-left:auto}
+.verdict{text-align:center;padding:14px;background:#161b22;border-radius:10px;border:1px solid #30363d;margin-bottom:10px}
+.action{font-size:24px;font-weight:800;margin-bottom:4px}
+.summary{font-size:11px;color:#8b949e;line-height:1.4}
+.al{color:#3fb950}.as{color:#f85149}.aw{color:#d29922}
+.badge{display:inline-block;padding:1px 8px;border-radius:10px;font-size:10px;font-weight:600;margin-left:6px}
+.bs{background:#0d4429;color:#3fb950}.bm{background:#3d2300;color:#d29922}.bw{background:#1c1c2e;color:#8b949e}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.card{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:10px}
+.card.full{grid-column:1/-1}
+.ct{font-size:10px;color:#8b949e;text-transform:uppercase;letter-spacing:.4px;margin-bottom:7px}
+.row{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #21262d;font-size:12px}
+.row:last-child{border-bottom:none}
+.rl{color:#8b949e}.rv{font-weight:600}
+.up{color:#3fb950}.dn{color:#f85149}.nt{color:#8b949e}
+.pbox{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.pi{background:#0d1117;border-radius:6px;padding:6px 8px}
+.pl{font-size:9px;color:#8b949e;margin-bottom:2px}
+.pv{font-size:13px;font-weight:700}
+.rlist{list-style:none}
+.rlist li{padding:4px 0;font-size:11px;color:#c9d1d9;border-bottom:1px solid #21262d;display:flex;gap:5px}
+.rlist li:last-child{border-bottom:none}
+.rlist li::before{content:"›";color:#58a6ff;font-weight:bold}
+canvas{width:100%;height:60px;display:block}
+.loading{display:flex;align-items:center;justify-content:center;height:80px;color:#8b949e;font-size:12px;flex-direction:column;gap:8px}
+.spinner{width:20px;height:20px;border:2px solid #30363d;border-top-color:#58a6ff;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.eb{background:#1c0a0a;border:1px solid #6e2020;border-radius:8px;padding:10px;font-size:11px;color:#f85149}
+.rbtn{padding:5px 12px;background:#1f6feb;border:none;border-radius:5px;color:#fff;cursor:pointer;font-size:12px}
+.rbtn:hover{background:#388bfd}
+.rbtn:disabled{opacity:.5}
+.footer{text-align:center;font-size:9px;color:#484f58;margin-top:8px;padding-bottom:4px}
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>📊 币安合约判断面板</h1>
+  <button class="rbtn" id="rb" onclick="loadData()">刷新</button>
+</div>
+<div class="search-wrap">
+  <span class="si">🔍</span>
+  <input class="search-input" id="search" placeholder="搜索币种 BTC ETH SOL..." autocomplete="off"
+    oninput="onSearch()" onfocus="onFocus()" onblur="onBlur()">
+  <div class="dropdown" id="dd"></div>
+</div>
+<div class="cur">
+  <span class="name" id="cn">BTCUSDT</span>
+  <span class="hint">输入币种名搜索切换</span>
+</div>
+<div id="content"><div class="loading"><div class="spinner"></div>正在加载...</div></div>
+<script>
+const API='http://127.0.0.1:8765';
+let sym='BTCUSDT',allSyms=[],autoT=null;
+async function loadSyms(){
+  try{const r=await fetch(API+'/api/symbols');allSyms=await r.json();}catch(e){}
+}
+function onSearch(){
+  const q=document.getElementById('search').value.trim().toUpperCase();
+  const dd=document.getElementById('dd');
+  if(!q){dd.classList.remove('show');return}
+  const m=allSyms.filter(s=>s.symbol.includes(q)||s.baseAsset.toUpperCase().includes(q)).slice(0,15);
+  if(!m.length){dd.classList.remove('show');return}
+  dd.innerHTML=m.map(s=>`<div class="di" onmousedown="pick('${s.symbol}')"><span class="sym">${s.symbol}</span><span class="base">${s.baseAsset}</span></div>`).join('');
+  dd.classList.add('show');
+}
+function onFocus(){if(document.getElementById('search').value.trim())onSearch()}
+function onBlur(){setTimeout(()=>document.getElementById('dd').classList.remove('show'),200)}
+function pick(s){sym=s;document.getElementById('cn').textContent=s;document.getElementById('search').value='';document.getElementById('dd').classList.remove('show');loadData();}
+async function loadData(){
+  const btn=document.getElementById('rb');btn.disabled=true;btn.textContent='加载中';
+  if(!allSyms.length)await loadSyms();
+  try{
+    const r=await fetch(`${API}/api/analyze?symbol=${sym}`);
+    const d=await r.json();
+    if(d.error)throw new Error(d.error);
+    render(d);
+  }catch(e){
+    document.getElementById('content').innerHTML=`<div class="eb">⚠️ ${e.message}</div>`;
+  }
+  btn.disabled=false;btn.textContent='刷新';
+  clearTimeout(autoT);autoT=setTimeout(loadData,30000);
+}
+function ac(a){if(a.includes('做多')||a.startsWith('偏多'))return'al';if(a.includes('做空')||a.startsWith('偏空'))return'as';return'aw'}
+function bc(c){if(c==='强')return'bs';if(c==='中')return'bm';return'bw'}
+function cv(v,t=0){return v>t?'up':v<t?'dn':'nt'}
+function fmt(n,d=2){return Number(n).toFixed(d)}
+function fpct(n){return(Number(n)>=0?'+':'')+Number(n).toFixed(3)+'%'}
+function drawChart(id,closes){
+  const c=document.getElementById(id);if(!c)return;
+  const ctx=c.getContext('2d');const W=c.offsetWidth||360,H=60;c.width=W;c.height=H;
+  const mn=Math.min(...closes),mx=Math.max(...closes),rng=mx-mn||1;
+  const pts=closes.map((v,i)=>({x:i/(closes.length-1)*W,y:H-((v-mn)/rng)*(H-6)-3}));
+  const up=closes[closes.length-1]>=closes[0];
+  const g=ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,up?'rgba(63,185,80,.35)':'rgba(248,81,73,.35)');
+  g.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);pts.slice(1).forEach(p=>ctx.lineTo(p.x,p.y));
+  ctx.lineTo(W,H);ctx.lineTo(0,H);ctx.closePath();ctx.fillStyle=g;ctx.fill();
+  ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);pts.slice(1).forEach(p=>ctx.lineTo(p.x,p.y));
+  ctx.strokeStyle=up?'#3fb950':'#f85149';ctx.lineWidth=1.5;ctx.stroke();
+}
+function render(d){
+  const rs=(d.reasons||[]).map(r=>`<li>${r}</li>`).join('')||'<li>暂无特别提示</li>';
+  document.getElementById('content').innerHTML=`
+  <div class="verdict">
+    <div class="action ${ac(d.action)}">${d.action}<span class="badge ${bc(d.confidence)}">${d.confidence}</span></div>
+  </div>
+  <div class="grid">
+    <div class="card full"><div class="ct">近60根K线</div><canvas id="mc"></canvas></div>
+    <div class="card">
+      <div class="ct">价格结构</div>
+      <div class="row"><span class="rl">现价</span><span class="rv">${fmt(d.close,2)}</span></div>
+      <div class="row"><span class="rl">趋势</span><span class="rv ${d.trend==='偏多'?'up':d.trend==='偏空'?'dn':'nt'}">${d.trend}</span></div>
+      <div class="row"><span class="rl">状态</span><span class="rv">${d.state}</span></div>
+      <div class="row"><span class="rl">RSI</span><span class="rv ${d.rsi>55?'up':d.rsi<45?'dn':'nt'}">${fmt(d.rsi,1)}</span></div>
+      <div class="row"><span class="rl">支撑</span><span class="rv up">${fmt(d.support,2)}</span></div>
+      <div class="row"><span class="rl">压力</span><span class="rv dn">${fmt(d.resistance,2)}</span></div>
+    </div>
+    <div class="card">
+      <div class="ct">持仓结构</div>
+      <div class="row"><span class="rl">OI变化</span><span class="rv ${cv(d.oi_change)}">${fpct(d.oi_change)}</span></div>
+      <div class="row"><span class="rl">买卖比</span><span class="rv ${cv(d.taker_ratio,1)}">${fmt(d.taker_ratio,3)}</span></div>
+      <div class="row"><span class="rl">大户仓位</span><span class="rv ${cv(d.top_pos_ratio,1)}">${fmt(d.top_pos_ratio,3)}</span></div>
+      <div class="row"><span class="rl">多空比</span><span class="rv ${cv(d.global_ratio,1)}">${fmt(d.global_ratio,3)}</span></div>
+      <div class="row"><span class="rl">资金费率</span><span class="rv ${cv(d.last_fr)}">${(d.last_fr*100).toFixed(4)}%</span></div>
+      <div class="row"><span class="rl">费率状态</span><span class="rv">${d.funding_state}</span></div>
+    </div>
+    <div class="card full">
+      <div class="ct">执行参考</div>
+      <div class="pbox">
+        <div class="pi"><div class="pl">进场</div><div class="pv">${fmt(d.entry,2)}</div></div>
+        <div class="pi"><div class="pl">止损</div><div class="pv dn">${fmt(d.stop_loss,2)}</div></div>
+        <div class="pi"><div class="pl">止盈1</div><div class="pv up">${fmt(d.take_profit_1,2)}</div></div>
+        <div class="pi"><div class="pl">止盈2 · 盈亏比 1:${fmt(d.rr,2)}</div><div class="pv up">${fmt(d.take_profit_2,2)}</div></div>
+      </div>
+    </div>
+    <div class="card full"><div class="ct">判断依据</div><ul class="rlist">${rs}</ul></div>
+  </div>
+  <div class="footer">更新于 ${new Date(d.updated_at*1000).toLocaleTimeString('zh-CN')} · 30秒自动刷新 · 仅供参考</div>`;
+  requestAnimationFrame(()=>drawChart('mc',d.chart));
+}
+window.onload=loadData;
+</script>
+</body>
+</html>
