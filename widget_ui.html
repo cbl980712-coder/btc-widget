@@ -3,114 +3,239 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>币安合约面板</title>
+<title>币安合约判断面板</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Microsoft YaHei','Segoe UI',sans-serif;background:#0d1117;color:#e6edf3;padding:12px;user-select:none}
-.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;-webkit-app-region:drag;cursor:move}
+body{font-family:"Microsoft YaHei","Segoe UI",sans-serif;background:#0d1117;color:#e6edf3;padding:12px;font-size:13px}
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
 .header h1{font-size:15px;font-weight:700;color:#f0f6fc}
-.search-wrap{position:relative;margin-bottom:10px}
-.search-input{width:100%;padding:8px 12px 8px 32px;background:#161b22;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:13px;outline:none}
+.search-wrap{position:relative;margin-bottom:8px}
+.si{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:#8b949e}
+.search-input{width:100%;padding:8px 12px 8px 30px;background:#161b22;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:13px;outline:none}
 .search-input:focus{border-color:#58a6ff}
-.si{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:#8b949e;font-size:14px}
-.dropdown{position:absolute;top:100%;left:0;right:0;background:#161b22;border:1px solid #30363d;border-radius:8px;max-height:200px;overflow-y:auto;z-index:999;display:none}
+.dropdown{position:absolute;top:100%;left:0;right:0;background:#161b22;border:1px solid #30363d;border-radius:8px;max-height:180px;overflow-y:auto;z-index:999;display:none}
 .dropdown.show{display:block}
-.di{padding:7px 12px;cursor:pointer;font-size:12px;display:flex;justify-content:space-between}
+.di{padding:7px 12px;cursor:pointer;display:flex;justify-content:space-between}
 .di:hover{background:#21262d}
 .di .sym{font-weight:600;color:#58a6ff}
 .di .base{color:#8b949e;font-size:11px}
-.cur{display:flex;align-items:center;margin-bottom:10px;padding:6px 12px;background:#161b22;border-radius:8px;border:1px solid #30363d}
-.cur .name{font-size:14px;font-weight:700}
-.cur .hint{font-size:10px;color:#8b949e;margin-left:auto}
-.verdict{text-align:center;padding:14px;background:#161b22;border-radius:10px;border:1px solid #30363d;margin-bottom:10px}
-.action{font-size:24px;font-weight:800;margin-bottom:4px}
-.summary{font-size:11px;color:#8b949e;line-height:1.4}
+.period-bar{display:flex;gap:6px;margin-bottom:8px}
+.pb{padding:5px 12px;border-radius:6px;border:1px solid #30363d;background:#161b22;color:#8b949e;cursor:pointer;font-size:12px}
+.pb:hover{border-color:#58a6ff;color:#58a6ff}
+.pb.active{background:#1f6feb;border-color:#1f6feb;color:#fff}
+.cur-sym{display:flex;align-items:center;margin-bottom:8px;padding:6px 10px;background:#161b22;border-radius:8px;border:1px solid #30363d}
+.cur-sym .nm{font-size:14px;font-weight:700}
+.cur-sym .hi{font-size:10px;color:#8b949e;margin-left:6px}
+.cur-sym .ref{margin-left:auto;font-size:11px;color:#8b949e}
+.card{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:12px;margin-bottom:8px}
+.ct{font-size:10px;color:#8b949e;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px}
+.verdict{text-align:center;padding:12px 0}
+.verdict .act{font-size:22px;font-weight:800;margin-bottom:4px}
+.verdict .summ{font-size:11px;color:#8b949e;line-height:1.4}
 .al{color:#3fb950}.as{color:#f85149}.aw{color:#d29922}
-.badge{display:inline-block;padding:1px 8px;border-radius:10px;font-size:10px;font-weight:600;margin-left:6px}
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;margin-left:6px;vertical-align:middle}
 .bs{background:#0d4429;color:#3fb950}.bm{background:#3d2300;color:#d29922}.bw{background:#1c1c2e;color:#8b949e}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
-.card{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:10px}
-.card.full{grid-column:1/-1}
-.ct{font-size:10px;color:#8b949e;text-transform:uppercase;letter-spacing:.4px;margin-bottom:7px}
-.row{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #21262d;font-size:12px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #21262d;font-size:12px}
 .row:last-child{border-bottom:none}
 .rl{color:#8b949e}.rv{font-weight:600}
 .up{color:#3fb950}.dn{color:#f85149}.nt{color:#8b949e}
 .pbox{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-.pi{background:#0d1117;border-radius:6px;padding:6px 8px}
+.pi{background:#0d1117;border-radius:6px;padding:7px 9px}
 .pl{font-size:9px;color:#8b949e;margin-bottom:2px}
 .pv{font-size:13px;font-weight:700}
 .rlist{list-style:none}
-.rlist li{padding:4px 0;font-size:11px;color:#c9d1d9;border-bottom:1px solid #21262d;display:flex;gap:5px}
+.rlist li{padding:4px 0;font-size:11px;color:#c9d1d9;border-bottom:1px solid #21262d;display:flex;gap:5px;line-height:1.4}
 .rlist li:last-child{border-bottom:none}
-.rlist li::before{content:"›";color:#58a6ff;font-weight:bold}
+.rlist li::before{content:"›";color:#58a6ff;font-weight:bold;flex-shrink:0}
 canvas{width:100%;height:60px;display:block}
-.loading{display:flex;align-items:center;justify-content:center;height:80px;color:#8b949e;font-size:12px;flex-direction:column;gap:8px}
+.overview-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.section-title{font-size:12px;font-weight:700;padding:4px 0;margin-bottom:6px;border-bottom:1px solid #30363d}
+.section-long{color:#3fb950}.section-short{color:#f85149}
+.ov-item{display:flex;align-items:center;padding:8px 10px;background:#161b22;border:1px solid #30363d;border-radius:8px;margin-bottom:5px;cursor:pointer;transition:all .2s}
+.ov-item:hover{border-color:#58a6ff;background:#1c2128}
+.ov-sym{font-weight:700;font-size:13px;min-width:120px}
+.ov-price{font-size:12px;color:#8b949e;margin-right:auto}
+.ov-score{display:flex;gap:2px;margin-right:8px}
+.ov-dot{width:8px;height:8px;border-radius:50%;background:#30363d}
+.ov-dot.on-long{background:#3fb950}
+.ov-dot.on-short{background:#f85149}
+.ov-rsi{font-size:11px;color:#8b949e;min-width:45px;text-align:right}
+.ov-chg{font-size:11px;min-width:52px;text-align:right;font-weight:600}
+.ov-vol{font-size:10px;color:#484f58;min-width:52px;text-align:right}
+.ov-arrow{font-size:16px;margin-left:6px}
+.ov-loading{text-align:center;padding:30px;color:#8b949e}
+.ov-spinner{width:24px;height:24px;border:2px solid #30363d;border-top-color:#58a6ff;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 10px}
+.ov-progress{width:100%;height:4px;background:#21262d;border-radius:2px;margin-top:10px}
+.ov-progress-bar{height:4px;background:#1f6feb;border-radius:2px;transition:width .3s}
+.back-btn{padding:5px 14px;background:#21262d;border:1px solid #30363d;border-radius:6px;color:#e6edf3;cursor:pointer;font-size:12px}
+.back-btn:hover{border-color:#58a6ff;color:#58a6ff}
+.ov-empty{text-align:center;padding:16px;color:#8b949e;font-size:12px}
+.ov-stats{font-size:11px;color:#8b949e;margin-bottom:8px}
+.loading{display:flex;align-items:center;justify-content:center;height:80px;color:#8b949e;flex-direction:column;gap:8px}
 .spinner{width:20px;height:20px;border:2px solid #30363d;border-top-color:#58a6ff;border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 .eb{background:#1c0a0a;border:1px solid #6e2020;border-radius:8px;padding:10px;font-size:11px;color:#f85149}
 .rbtn{padding:5px 12px;background:#1f6feb;border:none;border-radius:5px;color:#fff;cursor:pointer;font-size:12px}
 .rbtn:hover{background:#388bfd}
 .rbtn:disabled{opacity:.5}
-.footer{text-align:center;font-size:9px;color:#484f58;margin-top:8px;padding-bottom:4px}
+.footer{text-align:center;font-size:9px;color:#484f58;margin-top:6px;padding-bottom:4px}
+.calc-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.calc-label{font-size:11px;color:#8b949e;min-width:60px}
+.calc-input{background:#0d1117;border:1px solid #30363d;border-radius:5px;color:#e6edf3;font-size:12px;padding:4px 8px;width:120px;outline:none}
+.calc-input:focus{border-color:#58a6ff}
+input[type=range]{width:120px;accent-color:#1f6feb}
+.tp-select{display:flex;gap:6px}
+.tp-btn{padding:3px 10px;border-radius:5px;border:1px solid #30363d;background:#0d1117;color:#8b949e;cursor:pointer;font-size:11px}
+.tp-btn.sel{background:#1f6feb;border-color:#1f6feb;color:#fff}
+.calc-result{background:#0d1117;border-radius:8px;padding:10px;margin-top:8px}
+.cr-row{display:flex;justify-content:space-between;padding:3px 0;font-size:12px;border-bottom:1px solid #21262d}
+.cr-row:last-child{border-bottom:none}
+.cr-label{color:#8b949e}
+.cr-val{font-weight:700}
+.signal-strong{color:#3fb950}
+.signal-mid{color:#d29922}
+.signal-weak{color:#8b949e}
+.signal-rev{color:#f85149}
 </style>
 </head>
 <body>
-<div class="header">
-  <h1>📊 币安合约判断面板</h1>
-  <button class="rbtn" id="rb" onclick="loadData()">刷新</button>
+<!-- 总览页 -->
+<div id="page-overview">
+  <div class="header">
+    <h1>📊 合约信号总览</h1>
+    <button class="rbtn" id="ov-rb" onclick="loadOverview()">刷新</button>
+  </div>
+  <div class="period-bar" id="ov-period-bar">
+    <button class="pb" onclick="setOvPeriod(this,'5m')">5m</button>
+    <button class="pb active" onclick="setOvPeriod(this,'15m')">15m</button>
+    <button class="pb" onclick="setOvPeriod(this,'1h')">1h</button>
+    <button class="pb" onclick="setOvPeriod(this,'4h')">4h</button>
+    <button class="pb" onclick="setOvPeriod(this,'1d')">1d</button>
+  </div>
+  <div id="ov-content"><div class="ov-loading"><div class="ov-spinner"></div>正在扫描Top50合约...</div></div>
 </div>
-<div class="search-wrap">
-  <span class="si">🔍</span>
-  <input class="search-input" id="search" placeholder="搜索币种 BTC ETH SOL..." autocomplete="off"
-    oninput="onSearch()" onfocus="onFocus()" onblur="onBlur()">
-  <div class="dropdown" id="dd"></div>
+
+<!-- 详情页 -->
+<div id="page-detail" style="display:none">
+  <div class="header">
+    <button class="back-btn" onclick="showOverview()">← 返回总览</button>
+    <button class="rbtn" id="rb" onclick="loadData()">刷新</button>
+  </div>
+  <div class="search-wrap">
+    <span class="si">🔍</span>
+    <input class="search-input" id="search" placeholder="搜索币种 BTC ETH SOL..." autocomplete="off"
+      oninput="onSearch()" onfocus="onFocus()" onblur="onBlur()">
+    <div class="dropdown" id="dd"></div>
+  </div>
+  <div class="period-bar">
+    <button class="pb" onclick="setPeriod(this,'5m')">5m</button>
+    <button class="pb active" onclick="setPeriod(this,'15m')">15m</button>
+    <button class="pb" onclick="setPeriod(this,'1h')">1h</button>
+    <button class="pb" onclick="setPeriod(this,'4h')">4h</button>
+    <button class="pb" onclick="setPeriod(this,'1d')">1d</button>
+  </div>
+  <div class="cur-sym">
+    <span class="nm" id="cn">BTCUSDT</span>
+    <span class="hi" id="higher-hint"></span>
+    <span class="ref">搜索框切换币种</span>
+  </div>
+  <div id="content"><div class="loading"><div class="spinner"></div>正在加载...</div></div>
 </div>
-<div class="cur">
-  <span class="name" id="cn">BTCUSDT</span>
-  <span class="hint">输入币种名搜索切换</span>
-</div>
-<div id="content"><div class="loading"><div class="spinner"></div>正在加载...</div></div>
+
 <script>
 const API='http://127.0.0.1:8765';
-let sym='BTCUSDT',allSyms=[],autoT=null;
+let sym='BTCUSDT',interval='15m',allSyms=[],autoT=null,curData=null,selTp=1;
+
+const HIGHER={'5m':'15m','15m':'1h','1h':'4h','4h':'1d','1d':'1w'};
+
+let cnMap=[];
 async function loadSyms(){
-  try{const r=await fetch(API+'/api/symbols');allSyms=await r.json();}catch(e){}
+  try{
+    const ctrl0=new AbortController();setTimeout(()=>ctrl0.abort(),8000);
+    const r=await fetch(API+'/api/symbols',{signal:ctrl0.signal});const d=await r.json();
+    allSyms=d.symbols||[];
+    cnMap=d.cn_map||[];
+  }catch(e){}
 }
 function onSearch(){
-  const q=document.getElementById('search').value.trim().toUpperCase();
+  const raw=document.getElementById('search').value.trim();
+  const q=raw.toUpperCase();
   const dd=document.getElementById('dd');
-  if(!q){dd.classList.remove('show');return}
-  const m=allSyms.filter(s=>s.symbol.includes(q)||s.baseAsset.toUpperCase().includes(q)).slice(0,15);
-  if(!m.length){dd.classList.remove('show');return}
-  dd.innerHTML=m.map(s=>`<div class="di" onmousedown="pick('${s.symbol}')"><span class="sym">${s.symbol}</span><span class="base">${s.baseAsset}</span></div>`).join('');
+  if(!raw){dd.classList.remove('show');return}
+  // 同时匹配：英文symbol、中文symbol（如"币安人生USDT"）、cn别名
+  const cnHit=cnMap.filter(c=>c.cn.includes(raw)||c.symbol.includes(q)||c.symbol.includes(raw));
+  const cnSyms=new Set(cnHit.map(c=>c.symbol));
+  // allSyms包含中文symbol，同时用原始输入和大写输入匹配
+  const enHit=allSyms.filter(s=>
+    !cnSyms.has(s)&&(s.includes(q)||s.includes(raw))
+  ).slice(0,12);
+  const items=[
+    ...cnHit.map(c=>`<div class="di" onmousedown="pick('${c.symbol}')"><span class="sym">${c.symbol}</span><span class="base">${c.cn}</span></div>`),
+    ...enHit.map(s=>`<div class="di" onmousedown="pick('${s}')"><span class="sym">${s}</span></div>`)
+  ].slice(0,15);
+  if(!items.length){dd.classList.remove('show');return}
+  dd.innerHTML=items.join('');
   dd.classList.add('show');
 }
 function onFocus(){if(document.getElementById('search').value.trim())onSearch()}
 function onBlur(){setTimeout(()=>document.getElementById('dd').classList.remove('show'),200)}
 function pick(s){sym=s;document.getElementById('cn').textContent=s;document.getElementById('search').value='';document.getElementById('dd').classList.remove('show');loadData();}
+function setPeriod(el,p){
+  document.querySelectorAll('.pb').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');interval=p;
+  document.getElementById('higher-hint').textContent='大周期参考:'+HIGHER[p];
+  loadData();
+}
+
 async function loadData(){
   const btn=document.getElementById('rb');btn.disabled=true;btn.textContent='加载中';
   if(!allSyms.length)await loadSyms();
   try{
-    const r=await fetch(`${API}/api/analyze?symbol=${sym}`);
+    const analyzeCtrl=new AbortController();const analyzeTimer=setTimeout(()=>analyzeCtrl.abort(),12000);
+    const r=await fetch(`${API}/api/analyze?symbol=${sym}&interval=${interval}`,{signal:analyzeCtrl.signal});
+    clearTimeout(analyzeTimer);
     const d=await r.json();
     if(d.error)throw new Error(d.error);
-    render(d);
+    curData=d;render(d);
   }catch(e){
-    document.getElementById('content').innerHTML=`<div class="eb">⚠️ ${e.message}</div>`;
+    document.getElementById('content').innerHTML=`<div class="eb">⚠️ ${e.message}<br><br>请确认已双击 start_widget.bat 启动服务</div>`;
   }
   btn.disabled=false;btn.textContent='刷新';
   clearTimeout(autoT);autoT=setTimeout(loadData,30000);
 }
-function ac(a){if(a.includes('做多')||a.startsWith('偏多'))return'al';if(a.includes('做空')||a.startsWith('偏空'))return'as';return'aw'}
-function bc(c){if(c==='强')return'bs';if(c==='中')return'bm';return'bw'}
+
+function sigClass(sl){
+  if(sl==='强')return'signal-strong';
+  if(sl==='中')return'signal-mid';
+  if(sl==='反向')return'signal-rev';
+  return'signal-weak';
+}
+function sigBadge(sl){
+  if(sl==='强')return'bs';if(sl==='中')return'bm';return'bw';
+}
+function sigEmoji(sl){
+  if(sl==='强')return'⭐⭐⭐';if(sl==='中')return'⭐⭐';if(sl==='弱')return'⭐';return'❌';
+}
+function dirClass(t){return t==='多'?'up':t==='空'?'dn':'nt'}
 function cv(v,t=0){return v>t?'up':v<t?'dn':'nt'}
-function fmt(n,d=2){return Number(n).toFixed(d)}
+function fmt(n,d=2){
+  const v=Number(n);
+  if(v===0||isNaN(v)) return '0.00';
+  const av=Math.abs(v);
+  // 小于0.001用5位有效数字
+  if(av>0&&av<0.001) return parseFloat(v.toPrecision(5)).toString();
+  // 小于1用4位有效数字
+  if(av<1) return parseFloat(v.toPrecision(4)).toString();
+  // 大于等于1正常toFixed
+  return v.toFixed(d);
+}
 function fpct(n){return(Number(n)>=0?'+':'')+Number(n).toFixed(3)+'%'}
+
 function drawChart(id,closes){
   const c=document.getElementById(id);if(!c)return;
   const ctx=c.getContext('2d');const W=c.offsetWidth||360,H=60;c.width=W;c.height=H;
+  if(!closes||!closes.length)return;
   const mn=Math.min(...closes),mx=Math.max(...closes),rng=mx-mn||1;
   const pts=closes.map((v,i)=>({x:i/(closes.length-1)*W,y:H-((v-mn)/rng)*(H-6)-3}));
   const up=closes[closes.length-1]>=closes[0];
@@ -122,47 +247,268 @@ function drawChart(id,closes){
   ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);pts.slice(1).forEach(p=>ctx.lineTo(p.x,p.y));
   ctx.strokeStyle=up?'#3fb950':'#f85149';ctx.lineWidth=1.5;ctx.stroke();
 }
+
+function calcProfit(){
+  if(!curData)return;
+  const principal=parseFloat(document.getElementById('c-principal').value)||1000;
+  const lev=parseInt(document.getElementById('c-lev').value)||10;
+  const fee=parseFloat(document.getElementById('c-fee').value)||0.10;
+  document.getElementById('c-lev-val').textContent=lev+'x';
+  // 弱信号时用现价+1%/2%/3%估算
+  const entry=curData.entry_price||curData.close;
+  const dir=curData.trend==='空'?-1:1;
+  const fallback1=entry*(1+dir*0.01);
+  const fallback2=entry*(1+dir*0.02);
+  const fallback3=entry*(1+dir*0.03);
+  const tps=[curData.tp1||fallback1, curData.tp2||fallback2, curData.tp3||fallback3];
+  const tp=tps[selTp-1];
+  if(!tp){document.getElementById('calc-result').innerHTML='<div style="color:#8b949e;font-size:11px;text-align:center">暂无数据</div>';return}
+  const dir=curData.trend==='多'?1:-1;
+  const pct=Math.abs(tp-entry)/entry*100;
+  const openAmt=principal*lev;
+  const gross=openAmt*(pct/100);
+  const feeCost=openAmt*(fee/100)*2;
+  const net=gross-feeCost;
+  const netPct=net/principal*100;
+  const liqPrice=dir===1?entry*(1-0.9/lev):entry*(1+0.9/lev);
+  document.getElementById('calc-result').innerHTML=`
+    <div class="cr-row"><span class="cr-label">开仓金额</span><span class="cr-val">${fmt(openAmt,2)} USDT</span></div>
+    <div class="cr-row"><span class="cr-label">盈利空间</span><span class="cr-val up">+${fmt(pct,3)}%</span></div>
+    <div class="cr-row"><span class="cr-label">毛利润</span><span class="cr-val up">+${fmt(gross,2)} USDT</span></div>
+    <div class="cr-row"><span class="cr-label">手续费</span><span class="cr-val dn">-${fmt(feeCost,2)} USDT</span></div>
+    <div class="cr-row"><span class="cr-label">净利润</span><span class="cr-val ${net>=0?'up':'dn'}">${net>=0?'+':''}${fmt(net,2)} USDT</span></div>
+    <div class="cr-row"><span class="cr-label">净收益率</span><span class="cr-val ${netPct>=0?'up':'dn'}">${netPct>=0?'+':''}${fmt(netPct,2)}%</span></div>
+    <div class="cr-row"><span class="cr-label">预估爆仓价</span><span class="cr-val dn">${fmt(liqPrice,2)}</span></div>
+  `;
+}
+
+function setTp(n){
+  selTp=n;
+  document.querySelectorAll('.tp-btn').forEach((b,i)=>b.classList.toggle('sel',i+1===n));
+  calcProfit();
+}
+
 function render(d){
-  const rs=(d.reasons||[]).map(r=>`<li>${r}</li>`).join('')||'<li>暂无特别提示</li>';
+  const sl=d.signal_level||'弱';
+  const trend=d.trend||'中性';
+  const showTrade=sl==='强'||sl==='中';
+  const rs=(d.reasons_plain||[]).map(r=>`<li>${r}</li>`).join('')||'<li>暂无判断依据</li>';
+
+  let tradeHtml='';
+  // 强/中信号显示进场位
+  if(showTrade&&d.entry_price){
+    tradeHtml+=`
+    <div class="card">
+      <div class="ct">执行参考</div>
+      <div class="pbox">
+        <div class="pi"><div class="pl">进场价</div><div class="pv">${fmt(d.entry_price,2)}</div></div>
+        <div class="pi"><div class="pl">止损</div><div class="pv dn">${fmt(d.stop_loss,2)}</div></div>
+        <div class="pi"><div class="pl">止盈1</div><div class="pv up">${fmt(d.tp1,2)}</div></div>
+        <div class="pi"><div class="pl">止盈2</div><div class="pv up">${fmt(d.tp2,2)}</div></div>
+        ${d.tp3?`<div class="pi"><div class="pl">止盈3</div><div class="pv up">${fmt(d.tp3,2)}</div></div>`:''}
+        <div class="pi"><div class="pl">盈亏比</div><div class="pv">${d.rr?'1:'+fmt(d.rr,2):'--'}</div></div>
+      </div>
+    </div>`;
+  }
+  // 收益计算器：始终显示（弱信号也可以手动估算）
+  const calcEntry=d.entry_price||d.close;
+  const calcTp1=d.tp1||(d.trend==='多'?d.close*(1+0.01):d.close*(1-0.01));
+  const calcTp2=d.tp2||calcTp1;
+  const calcTp3=d.tp3||calcTp1;
+  tradeHtml+=`
+    <div class="card">
+      <div class="ct">💰 收益预估计算器</div>
+      ${!d.entry_price?'<div style="font-size:10px;color:#d29922;margin-bottom:8px">⚠️ 当前信号较弱，以下为参考估算（基于现价）</div>':''}
+      <div class="calc-row"><span class="calc-label">本金(U)</span><input class="calc-input" id="c-principal" type="number" value="1000" min="1" oninput="calcProfit()"></div>
+      <div class="calc-row"><span class="calc-label">杠杆 <span id="c-lev-val">10x</span></span><input type="range" id="c-lev" min="1" max="100" value="10" oninput="document.getElementById('c-lev-val').textContent=this.value+'x';calcProfit()"></div>
+      <div class="calc-row"><span class="calc-label">手续费%</span><input class="calc-input" id="c-fee" type="number" value="0.10" step="0.01" min="0" oninput="calcProfit()"></div>
+      <div class="calc-row">
+        <span class="calc-label">止盈目标</span>
+        <div class="tp-select">
+          <button class="tp-btn sel" onclick="setTp(1)">止盈1</button>
+          <button class="tp-btn" onclick="setTp(2)">止盈2</button>
+          <button class="tp-btn" onclick="setTp(3)">止盈3</button>
+        </div>
+      </div>
+      <div class="calc-result" id="calc-result"></div>
+    </div>`;
+
+  let weakHtml='';
+  if(sl==='弱'){
+    weakHtml=`<div class="card" style="border-color:#3d2300"><div style="text-align:center;padding:10px;color:#d29922;font-size:12px">⭐ 方向信号较弱，建议观望等待确认<br><span style="color:#8b949e;font-size:11px">满足更多条件后会显示进场建议</span></div></div>`;
+  }
+  if(sl==='反向'){
+    weakHtml=`<div class="card" style="border-color:#6e2020"><div style="text-align:center;padding:10px;color:#f85149;font-size:12px">❌ 大小周期方向相反，当前不宜进场<br><span style="color:#8b949e;font-size:11px">等待方向统一后再考虑操作</span></div></div>`;
+  }
+
   document.getElementById('content').innerHTML=`
-  <div class="verdict">
-    <div class="action ${ac(d.action)}">${d.action}<span class="badge ${bc(d.confidence)}">${d.confidence}</span></div>
+  <div class="card">
+    <div class="ct">${sym} · ${interval} · 综合判断</div>
+    <div class="verdict">
+      <div class="act ${dirClass(trend)}">
+        ${sigEmoji(sl)} ${trend==='多'?'偏多做多':trend==='空'?'偏空做空':'方向中性'}
+        <span class="badge ${sigBadge(sl)}">${sl}信号</span>
+      </div>
+      <div class="summ">${d.summary||''}</div>
+    </div>
   </div>
-  <div class="grid">
-    <div class="card full"><div class="ct">近60根K线</div><canvas id="mc"></canvas></div>
+  <div class="card">
+    <div class="ct">近60根K线</div>
+    <canvas id="mc"></canvas>
+  </div>
+  <div class="grid2">
     <div class="card">
       <div class="ct">价格结构</div>
-      <div class="row"><span class="rl">现价</span><span class="rv">${fmt(d.close,2)}</span></div>
-      <div class="row"><span class="rl">趋势</span><span class="rv ${d.trend==='偏多'?'up':d.trend==='偏空'?'dn':'nt'}">${d.trend}</span></div>
-      <div class="row"><span class="rl">状态</span><span class="rv">${d.state}</span></div>
-      <div class="row"><span class="rl">RSI</span><span class="rv ${d.rsi>55?'up':d.rsi<45?'dn':'nt'}">${fmt(d.rsi,1)}</span></div>
-      <div class="row"><span class="rl">支撑</span><span class="rv up">${fmt(d.support,2)}</span></div>
-      <div class="row"><span class="rl">压力</span><span class="rv dn">${fmt(d.resistance,2)}</span></div>
+      <div class="row"><span class="rl">现价</span><span class="rv">${fmt(d.close||0,2)}</span></div>
+      <div class="row"><span class="rl">趋势</span><span class="rv ${dirClass(trend)}">${trend}</span></div>
+      <div class="row"><span class="rl">大周期</span><span class="rv ${dirClass(d.higher_trend)}">${d.higher_trend||'--'}</span></div>
+      <div class="row"><span class="rl">状态</span><span class="rv">${d.state||'--'}</span></div>
+      <div class="row"><span class="rl">RSI</span><span class="rv ${d.rsi>55?'up':d.rsi<45?'dn':'nt'}">${fmt(d.rsi||50,1)}</span></div>
+      <div class="row"><span class="rl">支撑</span><span class="rv up">${fmt(d.support||0,2)}</span></div>
+      <div class="row"><span class="rl">压力</span><span class="rv dn">${fmt(d.resistance||0,2)}</span></div>
     </div>
     <div class="card">
       <div class="ct">持仓结构</div>
-      <div class="row"><span class="rl">OI变化</span><span class="rv ${cv(d.oi_change)}">${fpct(d.oi_change)}</span></div>
-      <div class="row"><span class="rl">买卖比</span><span class="rv ${cv(d.taker_ratio,1)}">${fmt(d.taker_ratio,3)}</span></div>
-      <div class="row"><span class="rl">大户仓位</span><span class="rv ${cv(d.top_pos_ratio,1)}">${fmt(d.top_pos_ratio,3)}</span></div>
-      <div class="row"><span class="rl">多空比</span><span class="rv ${cv(d.global_ratio,1)}">${fmt(d.global_ratio,3)}</span></div>
-      <div class="row"><span class="rl">资金费率</span><span class="rv ${cv(d.last_fr)}">${(d.last_fr*100).toFixed(4)}%</span></div>
-      <div class="row"><span class="rl">费率状态</span><span class="rv">${d.funding_state}</span></div>
+      <div class="row"><span class="rl">OI变化</span><span class="rv ${cv(d.oi_change)}">${fpct(d.oi_change||0)}</span></div>
+      <div class="row"><span class="rl">买卖比</span><span class="rv ${cv(d.taker_ratio,1)}">${fmt(d.taker_ratio||1,3)}</span></div>
+      <div class="row"><span class="rl">大户仓位</span><span class="rv ${cv(d.top_pos_ratio,1)}">${fmt(d.top_pos_ratio||1,3)}</span></div>
+      <div class="row"><span class="rl">资金费率</span><span class="rv ${cv(d.last_funding_rate)}">${((d.last_funding_rate||0)*100).toFixed(4)}%</span></div>
+      <div class="row"><span class="rl">费率状态</span><span class="rv">${d.funding_state||'--'}</span></div>
     </div>
-    <div class="card full">
-      <div class="ct">执行参考</div>
-      <div class="pbox">
-        <div class="pi"><div class="pl">进场</div><div class="pv">${fmt(d.entry,2)}</div></div>
-        <div class="pi"><div class="pl">止损</div><div class="pv dn">${fmt(d.stop_loss,2)}</div></div>
-        <div class="pi"><div class="pl">止盈1</div><div class="pv up">${fmt(d.take_profit_1,2)}</div></div>
-        <div class="pi"><div class="pl">止盈2 · 盈亏比 1:${fmt(d.rr,2)}</div><div class="pv up">${fmt(d.take_profit_2,2)}</div></div>
-      </div>
-    </div>
-    <div class="card full"><div class="ct">判断依据</div><ul class="rlist">${rs}</ul></div>
   </div>
-  <div class="footer">更新于 ${new Date(d.updated_at*1000).toLocaleTimeString('zh-CN')} · 30秒自动刷新 · 仅供参考</div>`;
-  requestAnimationFrame(()=>drawChart('mc',d.chart));
+  ${weakHtml}
+  ${tradeHtml}
+  <div class="card">
+    <div class="ct">判断依据</div>
+    <ul class="rlist">${rs}</ul>
+  </div>
+  <div class="footer">更新于 ${new Date((d.timestamp||Date.now()/1000)*1000).toLocaleTimeString('zh-CN')} · 10秒自动刷新 · 仅供参考，非投资建议</div>`;
+
+  requestAnimationFrame(()=>{
+    drawChart('mc',d.chart||[]);
+    if(showTrade&&d.entry_price)calcProfit();
+  });
 }
-window.onload=loadData;
+
+document.getElementById('higher-hint').textContent='大周期参考:'+HIGHER[interval];
+
+// ========== 总览功能 ==========
+let ovInterval='15m', ovAutoT=null;
+
+function setOvPeriod(el,p){
+  document.querySelectorAll('#ov-period-bar .pb').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');ovInterval=p;loadOverview();
+}
+
+function showOverview(){
+  document.getElementById('page-overview').style.display='';
+  document.getElementById('page-detail').style.display='none';
+  clearTimeout(autoT);
+}
+
+function showDetail(s){
+  sym=s;
+  document.getElementById('cn').textContent=s;
+  // 同步周期按钮
+  document.querySelectorAll('#page-detail .pb').forEach(b=>{
+    b.classList.toggle('active', b.textContent===interval);
+  });
+  document.getElementById('higher-hint').textContent='大周期参考:'+HIGHER[interval];
+  document.getElementById('page-overview').style.display='none';
+  document.getElementById('page-detail').style.display='';
+  loadData();
+}
+
+function scoreStars(score){
+  const abs=Math.abs(score);
+  const dir=score>0;
+  let dots='';
+  for(let i=0;i<4;i++){
+    dots+=`<div class="ov-dot ${i<abs?(dir?'on-long':'on-short'):''}"></div>`;
+  }
+  return dots;
+}
+
+async function loadOverview(){
+  const btn=document.getElementById('ov-rb');
+  btn.disabled=true;btn.textContent='扫描中';
+  // 显示进度动画
+  document.getElementById('ov-content').innerHTML=`
+    <div class="ov-loading">
+      <div class="ov-spinner"></div>
+      <div id="ov-prog-text">正在扫描Top50合约...</div>
+      <div class="ov-progress"><div class="ov-progress-bar" id="ov-pbar" style="width:0%"></div></div>
+    </div>`;
+  // 进度条动画（模拟，约5秒扫完）
+  let pct=0;
+  const progTimer=setInterval(()=>{
+    pct=Math.min(pct+3,90);
+    const pb=document.getElementById('ov-pbar');
+    if(pb)pb.style.width=pct+'%';
+  },150);
+  try{
+    const ctrl=new AbortController();
+    const timeoutId=setTimeout(()=>ctrl.abort(),20000);// 20秒超时（top50+10=60个symbol）
+    const r=await fetch(`${API}/api/overview?interval=${ovInterval}&top_n=50`,{signal:ctrl.signal});
+    clearTimeout(timeoutId);
+    const d=await r.json();
+    clearInterval(progTimer);
+    const pb=document.getElementById('ov-pbar');
+    if(pb)pb.style.width='100%';
+    setTimeout(()=>renderOverview(d),200);
+  }catch(e){
+    clearInterval(progTimer);
+    document.getElementById('ov-content').innerHTML=
+      `<div class="eb">⚠️ ${e.name==='AbortError'?'扫描超时，请检查网络后重试':e.message}<br>请确认已启动 start_widget.bat</div>`;
+  }
+  btn.disabled=false;btn.textContent='刷新';
+  clearTimeout(ovAutoT);ovAutoT=setTimeout(loadOverview,300000);
+}
+
+function renderOverview(d){
+  const longs=d.longs||[];
+  const shorts=d.shorts||[];
+  const ts=new Date(d.timestamp*1000).toLocaleTimeString('zh-CN');
+
+  const fmtVol=(v)=>{
+    if(!v) return '';
+    if(v>=1e9) return (v/1e9).toFixed(1)+'B';
+    if(v>=1e6) return (v/1e6).toFixed(0)+'M';
+    return (v/1e3).toFixed(0)+'K';
+  };
+  const renderList=(list,dir)=>{
+    if(!list.length) return `<div class="ov-empty">暂无明确${dir}向信号</div>`;
+    return list.map(item=>{
+      const chg=item.change_pct||0;
+      const chgStr=(chg>=0?'+':'')+chg.toFixed(2)+'%';
+      const chgCls=chg>=0?'up':'dn';
+      const volStr=item.qvol?fmtVol(item.qvol):'';
+      return `
+      <div class="ov-item" onclick="showDetail('${item.symbol}')">
+        <span class="ov-sym ${dir==='多'?'al':'as'}">${item.symbol}</span>
+        <span class="ov-price">${fmt(item.close,2)}</span>
+        <div class="ov-score">${scoreStars(item.score)}</div>
+        <span class="ov-chg ${chgCls}">${chgStr}</span>
+        <span class="ov-vol">${volStr}</span>
+        <span class="ov-rsi">RSI ${item.rsi}</span>
+      </div>`;
+    }).join('');
+  };
+
+  document.getElementById('ov-content').innerHTML=`
+    <div class="ov-stats">📊 已扫描 ${d.total_scanned} 个合约 · ${ovInterval}周期 · ${ts} · 5分钟自动刷新</div>
+    <div class="card">
+      <div class="section-title section-long">🟢 多头信号（${longs.length}个）· 按强度排序</div>
+      ${renderList(longs,'多')}
+    </div>
+    <div class="card" style="margin-top:8px">
+      <div class="section-title section-short">🔴 空头信号（${shorts.length}个）· 按强度排序</div>
+      ${renderList(shorts,'空')}
+    </div>
+    <div class="footer">点击任意币种查看详细分析 · 5分钟自动刷新</div>`;
+}
+
+window.onload=loadOverview;
 </script>
 </body>
 </html>
