@@ -316,18 +316,29 @@ function setPeriod(el,p){
 async function loadData(){
   const btn=document.getElementById('rb');btn.disabled=true;btn.textContent='加载中';
   if(!allSyms.length)await loadSyms();
+  let _retryCount=window._loadRetry||0;
   try{
     const analyzeCtrl=new AbortController();const analyzeTimer=setTimeout(()=>analyzeCtrl.abort(),12000);
-    const r=await fetch(`${API}/api/analyze?symbol=${sym}&interval=${interval}`,{signal:analyzeCtrl.signal});
+    const r=await fetch(`${API}/api/analyze?symbol=${encodeURIComponent(sym)}&interval=${interval}`,{signal:analyzeCtrl.signal});
     clearTimeout(analyzeTimer);
     const d=await r.json();
     if(d.error)throw new Error(d.error);
+    window._loadRetry=0;
     curData=d;render(d);
   }catch(e){
-    document.getElementById('content').innerHTML=`<div class="eb">⚠️ ${e.message}<br><br>请确认已双击 start_widget.bat 启动服务</div>`;
+    _retryCount++;window._loadRetry=_retryCount;
+    if(_retryCount<=2){
+      // 自动重试（最多2次），不显示错误
+      btn.disabled=false;btn.textContent='刷新';
+      clearTimeout(autoT);autoT=setTimeout(loadData, 2000);
+      return;
+    }
+    window._loadRetry=0;
+    const isAbort=e.name==='AbortError';
+    document.getElementById('content').innerHTML=`<div class="eb">⚠️ ${isAbort?'请求超时，请检查网络':e.message}<br><br>请确认已双击 start_widget.bat 启动服务<br><span style="color:#484f58;font-size:10px">10秒后自动重试...</span></div>`;
   }
   btn.disabled=false;btn.textContent='刷新';
-  clearTimeout(autoT);autoT=setTimeout(loadData,30000);
+  clearTimeout(autoT);autoT=setTimeout(loadData,10000);
 }
 
 function sigClass(g){
@@ -1445,10 +1456,16 @@ async function refreshSimbPanel(){
     const r=await fetch(API+'/api/sim_account');
     if(!r.ok) return;
     const acc=await r.json();
-    // 更新独立页面
+    // 更新独立页面（若设置面板展开中则跳过完整重绘，避免设置被覆盖）
     const pc=document.getElementById('simb-page-content');
     if(pc){
-      pc.innerHTML=renderSimbPanel(acc);
+      const cfgOpen=document.getElementById('simb-cfg')?.style.display!=='none';
+      if(cfgOpen){
+        // 仅刷新数字区域，不重绘整个面板
+        _patchSimbNumbers(acc);
+      } else {
+        pc.innerHTML=renderSimbPanel(acc);
+      }
     }
     // 更新总览底部mini bar
     const el=document.getElementById('simb-placeholder');
@@ -1464,6 +1481,32 @@ function startSimbPoll(){
 }
 function stopSimbPoll(){
   if(_simbPollT){clearInterval(_simbPollT);_simbPollT=null;}
+}
+function _patchSimbNumbers(acc){
+  // 仅更新数字显示，不重绘面板（设置面板展开时使用）
+  try{
+    const cfg=acc.config||{};
+    const eq=document.querySelector('.simb-eq');
+    if(!eq) return;
+    const cells=eq.querySelectorAll('.simb-eq-cell div:first-child');
+    if(cells.length>=9){
+      const tot=acc.total_equity??'--';const today=acc.today_pnl??0;
+      const rpnl=acc.realized_pnl??0;const dd=acc.max_drawdown??0;
+      const upnl=acc.unrealized_pnl??0;const wr=acc.win_rate;
+      const ops=(acc.open_positions||[]).length;const cls=acc.closed_count||0;
+      const liq=acc.liquidation_count||0;
+      const pc=v=>v>=0?'#3fb950':'#f85149';
+      cells[0].textContent=tot;
+      cells[1].textContent=(today>0?'+':'')+today; cells[1].style.color=pc(today);
+      cells[2].textContent=(rpnl>0?'+':'')+rpnl; cells[2].style.color=pc(rpnl);
+      cells[3].textContent=dd+'%';
+      cells[4].textContent=(upnl>0?'+':'')+upnl; cells[4].style.color=pc(upnl);
+      cells[5].textContent=wr!=null?wr+'%':'--'; cells[5].style.color=(wr||0)>=50?'#3fb950':'#f85149';
+      cells[6].textContent=ops+'/'+(cfg.max_positions||5);
+      cells[7].textContent=cls;
+      cells[8].textContent=liq; cells[8].style.color=liq>0?'#ff0000':'#484f58';
+    }
+  }catch(e){}
 }
 </script>
 </body>

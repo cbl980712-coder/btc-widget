@@ -921,17 +921,15 @@ def analyze(symbol, interval):
         signal_grade = "C"
     elif signal_score >= 3 and space >= atr * 1.0 and rr_for_grade >= 1.4 and cost_ok:
         signal_grade = "A"
-    elif signal_score >= 2 and higher_ok and space >= atr * 0.7 and rr_for_grade >= 1.1 and cost_ok:
+    elif signal_score >= 2 and higher_ok and space >= atr * 0.5 and rr_for_grade >= 1.0 and cost_ok:
         signal_grade = "B"
     else:
         signal_grade = "C"
 
-    # 4h 逆向降级（A→B，B→C，C不降）
+    # 4h 逆向降级（仅A→B；B档不再强制降C，改为执行层降权）
     if bias_dir not in ("中性",) and bias_dir != trend and trend != "中性":
         if signal_grade == "A":
             signal_grade = "B"
-        elif signal_grade == "B":
-            signal_grade = "C"
 
     # entry_price：结构区间进场点（zone中部，不再是 markPrice）
     _ez_entry = market_price  # fallback
@@ -2264,17 +2262,15 @@ def _layer2_full(symbol, interval, ticker_data=None):
             signal_grade = "C"
         elif signal_score >= 3 and space >= atr * 1.0 and rr_for_grade >= 1.4 and cost_ok:
             signal_grade = "A"
-        elif signal_score >= 2 and higher_ok and space >= atr * 0.7 and rr_for_grade >= 1.1 and cost_ok:
+        elif signal_score >= 2 and higher_ok and space >= atr * 0.5 and rr_for_grade >= 1.0 and cost_ok:
             signal_grade = "B"
         else:
             signal_grade = "C"
 
-        # 4h 逆向降级（A→B，B→C，C不降）
+        # 4h 逆向降级（仅A→B；B不再强制降C）
         if bias_dir not in ("中性",) and bias_dir != trend and trend != "中性":
             if signal_grade == "A":
                 signal_grade = "B"
-            elif signal_grade == "B":
-                signal_grade = "C"
 
         result = {
             "symbol":           symbol,
